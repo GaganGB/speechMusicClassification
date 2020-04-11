@@ -1,6 +1,5 @@
-# Importing librosa to extract feartures from the audio files
-
 import os
+import shutil
 import librosa
 import numpy as np
 from sklearn.cluster import KMeans
@@ -10,26 +9,37 @@ from sklearn.metrics import accuracy_score
 from sklearn.neural_network import MLPClassifier
 import joblib
 
-
+# Setting the train and test directories where the dataset is stored
 train_dir = "wav/train"
 test_dir = "wav/test"
+models_dir = "models"
+
+# Create new directories to store all the feature files and other related files
 def create_dirs():
-    if(os.path.exists("data") == False):
-        os.mkdir("data")
-    if(os.path.exists("data/train") == False):
-        os.mkdir("data/train")
-    if(os.path.exists("data/test") == False):
-        os.mkdir("data/test")
-    if(os.path.exists("data/train/features") == False):
-        os.mkdir("data/train/features")
-    if(os.path.exists("data/test/features") == False):
-        os.mkdir("data/test/features")
-    if(os.path.exists("data/train/kmean_features") == False):
-        os.mkdir("data/train/kmean_features")
-    if(os.path.exists("data/test/kmean_features") == False):
-        os.mkdir("data/test/kmean_features")
+    if(os.path.exists("data") == True):
+        try:
+           shutil.rmtree("data")
+        except:
+           print('Error while deleting directory')
+    os.mkdir("data")
+    os.mkdir("data/train")
+    os.mkdir("data/test")
+    os.mkdir("data/train/features")
+    os.mkdir("data/test/features")
+    os.mkdir("data/train/kmean_features")
+    os.mkdir("data/test/kmean_features")
+    if(os.path.exists(models_dir) == True):
+        try:
+           shutil.rmtree(models_dir)
+        except:
+           print('Error while deleting directory')
+    os.mkdir(models_dir)
     print("Done Directory creation")
 
+"""
+Extract MFCC features, spectral centroid, zero crossing rate as a vector for each utterance from train_dir directory
+and store in 'data/train/features' directory
+"""
 def feature_extraction_train(hop_length):
     list_dir = sorted(os.listdir(train_dir))
     for _, filename in enumerate(list_dir):
@@ -45,6 +55,10 @@ def feature_extraction_train(hop_length):
         print(filename)
     print("Done Feature Extraction for Train")
 
+"""
+Extract MFCC features, spectral centroid, zero crossing rate as a vector for each utterance from test_dir directory
+and store in 'data/test/features' directory
+"""
 def feature_extraction_test(hop_length):
     list_dir = sorted(os.listdir(test_dir))
     for _, filename in enumerate(list_dir):
@@ -60,6 +74,10 @@ def feature_extraction_test(hop_length):
         print(filename)
     print("Done Feature Extraction for Test")
 
+"""
+Since the extracted data has lot of feature vectors, we try to reduce the feature vectors of both train and test data using k-means
+with number of cluster given as n_clust.
+"""
 def reduce_feature_train(n_clust):
     list_dir = sorted(os.listdir("data/train/features"))
     for _,filename in enumerate(list_dir):
@@ -78,7 +96,22 @@ def reduce_feature_test(n_clust):
         print(filename)
     print("Done Reducing Feature for Test")
 
-def model_SVM(n_clust):
+"""
+We use SVM model to train and test the given dataset.
+"""
+def start_SVM(hop_length = 1024, n_clust = 16, folder_name='SVM'):
+    print("SVM Modelling")
+    if(os.path.exists(models_dir + "/" + folder_name) == True):
+        try:
+           shutil.rmtree(models_dir + "/" + folder_name)
+        except:
+           print('Error while deleting directory')
+    os.mkdir(models_dir + "/" + folder_name)
+    model_SVM(n_clust, folder_name)
+    test_SVM(n_clust, folder_name)
+    print("\n")
+
+def model_SVM(n_clust, folder_name):
     list_dir = sorted(os.listdir("data/train/kmean_features"))
     output_array = []
     for i,filename in enumerate(list_dir):
@@ -93,13 +126,13 @@ def model_SVM(n_clust):
         elif filename[:1]=='S':
             for j in range(n_clust):
                 output_array.append(0)
-        print(filename)
     output_array = np.transpose(np.array(output_array))
     clf = SVC(kernel='linear')
     clf.fit(input_array,output_array)
-    joblib.dump(clf, 'finalized_svm_model.sav')
+    file_name = models_dir + "/" + folder_name + "/" + "finalized_svm_model.sav"
+    joblib.dump(clf, file_name)
 
-def test_SVM(n_clust):
+def test_SVM(n_clust, folder_name):
     list_dir = sorted(os.listdir("data/test/kmean_features"))
     output_array_test = []
     for i,filename in enumerate(list_dir):
@@ -114,19 +147,35 @@ def test_SVM(n_clust):
         elif filename[:1]=='S':
             for j in range(n_clust):
                 output_array_test.append(0)
-        print(filename)
     output_array_test = np.transpose(np.array(output_array_test))
-    loaded_model = joblib.load("finalized_svm_model.sav")
+    file_name = models_dir + "/" + folder_name
+    loaded_model = joblib.load(file_name + "/" + "finalized_svm_model.sav")
     result = loaded_model.predict(input_array_test)
     conf_matrix = confusion_matrix(output_array_test, result, labels=[0,1])
     accuracy = accuracy_score(output_array_test, result)
-    print("Confusion Matrix")
-    print(conf_matrix)
-    print("Accuracy: " + str(accuracy) + "%")
+    f = open(file_name + "/" + "result.txt",'w')
+    f.write("Confusion Matrix\n")
+    f.write(str(conf_matrix[0,:]) + "\n")
+    f.write(str(conf_matrix[1,:]))
+    f.write("\nAccuracy: " + str(accuracy) + "%")
+    f.close()
 
+"""
+We use MLP Classifier to train and test the data.
+"""
+def start_MLP(hop_length = 1024, n_clust = 16, folder_name = 'MLP'):
+    print("NN Modelling")
+    if(os.path.exists(models_dir + "/" + folder_name) == True):
+        try:
+           shutil.rmtree(models_dir + "/" + folder_name)
+        except:
+           print('Error while deleting directory')
+    os.mkdir(models_dir + "/" + folder_name)
+    model_MLPClassifier(n_clust, folder_name)
+    test_MLPClassifier(n_clust, folder_name)
+    print("Done Modelling!")
 
-
-def model_MLPClassifier(n_clust):
+def model_MLPClassifier(n_clust, folder_name):
     list_dir = sorted(os.listdir("data/train/kmean_features"))
     output_array = []
     for i,filename in enumerate(list_dir):
@@ -141,16 +190,14 @@ def model_MLPClassifier(n_clust):
         elif filename[:1]=='S':
             for j in range(n_clust):
                 output_array.append(0)
-        print(filename)
     output_array = np.transpose(np.array(output_array))
-    # clf1 = MLPClassifier(solver='lbfgs')
     clf1 = MLPClassifier(solver='lbfgs', alpha=0.00005, hidden_layer_sizes=(5, 2), random_state=1)
-    # clf1 = MLPClassifier(solver='adam', alpha=1e-5, hidden_layer_sizes=(5,2), random_state=1)
     clf1.fit(input_array,output_array)
-    joblib.dump(clf1, 'finalized_nn_model.sav')
+    file_name = models_dir + "/" + folder_name + "/" + 'finalized_nn_model.sav'
+    joblib.dump(clf1, file_name)
 
 
-def test_MLPClassifier(n_clust):
+def test_MLPClassifier(n_clust, folder_name):
     list_dir = sorted(os.listdir("data/test/kmean_features"))
     output_array_test = []
     for i,filename in enumerate(list_dir):
@@ -165,36 +212,34 @@ def test_MLPClassifier(n_clust):
         elif filename[:1]=='S':
             for j in range(n_clust):
                 output_array_test.append(0)
-        print(filename)
     output_array_test = np.transpose(np.array(output_array_test))
-
-    loaded_model = joblib.load("finalized_nn_model.sav")
+    file_name = models_dir + "/" + folder_name
+    loaded_model = joblib.load(file_name + "/" + "finalized_nn_model.sav")
     result = loaded_model.predict(input_array_test)
     conf_matrix = confusion_matrix(output_array_test, result, labels=[0,1])
     accuracy = accuracy_score(output_array_test, result)
-    print("Confusion Matrix")
-    print(conf_matrix)
-    print("Accuracy: " + str(accuracy) + "%")
+    f = open(file_name + "/" + "result.txt",'w')
+    f.write("Confusion Matrix\n")
+    f.write(str(conf_matrix[0,:]) + "\n")
+    f.write(str(conf_matrix[1,:]))
+    f.write("\nAccuracy: " + str(accuracy) + "%")
+    f.close()
 
-
-def main():
-    print("___________________________________________________________\n")
-    print("Speech Music Classification")
-    hop_length = 1024
-    n_clust = 16
+def pre_modelling(hop_length = 1024, n_clust = 16):
     create_dirs()
     feature_extraction_train(hop_length)
     feature_extraction_test(hop_length)
     reduce_feature_train(n_clust)
     reduce_feature_test(n_clust)
-    print("SVM Modelling")
-    model_SVM(n_clust)
-    test_SVM(n_clust)
-    print("\n")
-    print("NN Modelling")
-    model_MLPClassifier(n_clust)
-    test_MLPClassifier(n_clust)
-    print("Done Modelling!")
+
+def main():
+    print("Speech Music Classification")
+    hop_length = 1024
+    n_clust = 16
+    # Uncomment when running the program for first time or after changing any parameters for feature_extraction
+    # pre_modelling(hop_length, n_clust)
+    start_SVM(hop_length, n_clust, 'SVM')
+    start_MLP(hop_length, n_clust, 'MLP')
 
 if __name__ == '__main__':
     main()
