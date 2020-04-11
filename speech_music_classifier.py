@@ -33,23 +33,31 @@ def create_dirs():
 def feature_extraction_train(hop_length):
     list_dir = sorted(os.listdir(train_dir))
     for _, filename in enumerate(list_dir):
-        y, sr = librosa.load("wav/train/" + str(filename))
+        # y, sr = librosa.load("wav/train/" + str(filename))
+        y = np.loadtxt(fname = "wav/train/" + str(filename))
+        sr = y[0]
+        y = y[1:]
         mfcc = np.array(librosa.feature.mfcc(y=y, sr=sr, n_mfcc=13, hop_length=hop_length))
         centroid = np.array(librosa.feature.spectral_centroid(y=y, sr=sr, hop_length=hop_length))
         zero_crossing_rate = np.array(librosa.feature.zero_crossing_rate(y=y, hop_length=hop_length))
         final = np.concatenate((mfcc, centroid, zero_crossing_rate))
         np.savetxt(fname = "data/train/features/" + str(filename[:-4]) + ".txt", X = final)
+        print(filename)
     print("Done Feature Extraction for Train")
 
 def feature_extraction_test(hop_length):
     list_dir = sorted(os.listdir(test_dir))
     for _, filename in enumerate(list_dir):
-        y, sr = librosa.load("wav/test/" + str(filename))
+        # y, sr = librosa.load("wav/test/" + str(filename))
+        y = np.loadtxt(fname = "wav/test/" + str(filename))
+        sr = y[0]
+        y = y[1:]
         mfcc = np.array(librosa.feature.mfcc(y=y, sr=sr, n_mfcc=13, hop_length=hop_length))
         centroid = np.array(librosa.feature.spectral_centroid(y=y, sr=sr, hop_length=hop_length))
         zero_crossing_rate = np.array(librosa.feature.zero_crossing_rate(y=y, hop_length=hop_length))
         final = np.concatenate((mfcc, centroid, zero_crossing_rate))
         np.savetxt(fname = "data/test/features/" + str(filename[:-4]) + ".txt", X = final)
+        print(filename)
     print("Done Feature Extraction for Test")
 
 def reduce_feature_train(n_clust):
@@ -58,6 +66,7 @@ def reduce_feature_train(n_clust):
         feature = np.transpose(np.loadtxt(fname = "data/train/features/" + str(filename)))
         kmeans = KMeans(n_clusters = n_clust).fit(feature)
         np.savetxt(fname = "data/train/kmean_features/" + str(filename), X = np.transpose(np.array(kmeans.cluster_centers_)))
+        print(filename)
     print("Done Reducing Feature for train")
 
 def reduce_feature_test(n_clust):
@@ -66,6 +75,7 @@ def reduce_feature_test(n_clust):
         feature = np.transpose(np.loadtxt(fname = "data/test/features/" + str(filename)))
         kmeans = KMeans(n_clusters = n_clust).fit(feature)
         np.savetxt(fname = "data/test/kmean_features/" + str(filename), X = np.transpose(np.array(kmeans.cluster_centers_)))
+        print(filename)
     print("Done Reducing Feature for Test")
 
 def model_SVM(n_clust):
@@ -83,6 +93,7 @@ def model_SVM(n_clust):
         elif filename[:1]=='S':
             for j in range(n_clust):
                 output_array.append(0)
+        print(filename)
     output_array = np.transpose(np.array(output_array))
     clf = SVC(kernel='linear')
     clf.fit(input_array,output_array)
@@ -103,6 +114,7 @@ def test_SVM(n_clust):
         elif filename[:1]=='S':
             for j in range(n_clust):
                 output_array_test.append(0)
+        print(filename)
     output_array_test = np.transpose(np.array(output_array_test))
     loaded_model = joblib.load("finalized_svm_model.sav")
     result = loaded_model.predict(input_array_test)
@@ -129,6 +141,7 @@ def model_MLPClassifier(n_clust):
         elif filename[:1]=='S':
             for j in range(n_clust):
                 output_array.append(0)
+        print(filename)
     output_array = np.transpose(np.array(output_array))
     # clf1 = MLPClassifier(solver='lbfgs')
     clf1 = MLPClassifier(solver='lbfgs', alpha=0.00005, hidden_layer_sizes=(5, 2), random_state=1)
@@ -152,6 +165,7 @@ def test_MLPClassifier(n_clust):
         elif filename[:1]=='S':
             for j in range(n_clust):
                 output_array_test.append(0)
+        print(filename)
     output_array_test = np.transpose(np.array(output_array_test))
 
     loaded_model = joblib.load("finalized_nn_model.sav")
@@ -167,7 +181,7 @@ def main():
     print("___________________________________________________________\n")
     print("Speech Music Classification")
     hop_length = 1024
-    n_clust = 64
+    n_clust = 16
     create_dirs()
     feature_extraction_train(hop_length)
     feature_extraction_test(hop_length)
