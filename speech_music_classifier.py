@@ -14,6 +14,22 @@ train_dir = "wav/train"
 test_dir = "wav/test"
 models_dir = "models"
 
+def pre_modelling(hop_length = 1024, n_clust = 16):
+    create_dirs()
+    feature_extraction_train(hop_length)
+    feature_extraction_test(hop_length)
+    reduce_feature_train(n_clust)
+    reduce_feature_test(n_clust)
+
+def main():
+    print("Speech Music Classification")
+    hop_length = 1024
+    n_clust = 16
+    # Uncomment when running the program for first time or after changing any parameters for feature_extraction
+    # pre_modelling(hop_length, n_clust)
+    start_SVM(hop_length, n_clust, 'SVM')
+    start_MLP(hop_length, n_clust, 'MLP')
+
 # Create new directories to store all the feature files and other related files
 def create_dirs():
     if(os.path.exists("data") == True):
@@ -224,22 +240,6 @@ def test_MLPClassifier(n_clust, folder_name):
     f.write(str(conf_matrix[1,:]))
     f.write("\nAccuracy: " + str(accuracy) + "%")
     f.close()
-
-def pre_modelling(hop_length = 1024, n_clust = 16):
-    create_dirs()
-    feature_extraction_train(hop_length)
-    feature_extraction_test(hop_length)
-    reduce_feature_train(n_clust)
-    reduce_feature_test(n_clust)
-
-def main():
-    print("Speech Music Classification")
-    hop_length = 1024
-    n_clust = 16
-    # Uncomment when running the program for first time or after changing any parameters for feature_extraction
-    # pre_modelling(hop_length, n_clust)
-    start_SVM(hop_length, n_clust, 'SVM')
-    start_MLP(hop_length, n_clust, 'MLP')
 
 if __name__ == '__main__':
     main()
