@@ -1,4 +1,0 @@
-Confusion Matrix
-[142  50]
-[ 44 148]
-Accuracy: 0.7552083333333334%
