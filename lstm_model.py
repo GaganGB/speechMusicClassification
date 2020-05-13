@@ -10,9 +10,83 @@ from keras.layers import Dropout
 from keras.layers import LSTM
 from keras.utils import to_categorical
 from matplotlib import pyplot
+from librosa import util
+from librosa import feature
 
 import os
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
+
+def normalize():
+    for _,filename in enumerate(sorted(os.listdir("wav/train"))):
+        wave = np.loadtxt(fname = "wav/train/" + str(filename))
+        final = util.normalize(wave)
+        np.savetxt(fname = "lstm_file/train/" + str(filename[:-4]) + ".txt", X = final)
+        print(filename)
+    # for _,filename in enumerate(sorted(os.listdir("wav/test"))):
+    #     wave = np.loadtxt(fname = "wav/test/" + str(filename))
+    #     final = util.normalize(wave)
+    #     np.savetxt(fname = "lstm_file/test/" + str(filename[:-4]) + ".txt", X = final)
+    #     print(filename)
+
+def create_dataset():
+    X_train = []
+    Y_train = []
+    X_test = []
+    Y_test = []
+    for _,filename in enumerate(sorted(os.listdir("lstm_file/train"))):
+        wave = np.loadtxt(fname = "lstm_file/train/" + str(filename))
+        rms_feature = feature.rms(y=wave, frame_length=1024, hop_length=256)
+        zero_cross_rate = feature.zero_crossing_rate(y=wave, frame_length=1024, hop_length=256)
+        spec_centroid = feature.spectral_centroid(y=wave, sr=22050, n_fft=1024, hop_length=256)
+        chroma = feature.chroma_stft(y=wave, sr=22050, n_fft=1024, hop_length=256)
+        spec_flat = feature.spectral_flatness(y=wave, n_fft=1024, hop_length=256)
+        poly_feat = feature.poly_features(y=wave, sr=22050, n_fft=1024, hop_length=256)
+        mfcc = feature.mfcc(y=wave, sr=22050, n_mfcc=15, n_fft=1024, hop_length=256)
+        final = np.concatenate((rms_feature, zero_cross_rate, spec_centroid, chroma, spec_flat, poly_feat, mfcc))
+        np.savetxt(fname = "lstm_feature/train/" + str(filename[:-4]) + ".txt", X = final)
+        Y_train.append(filename)
+        print(filename)
+    for _,filename in enumerate(sorted(os.listdir("lstm_file/test"))):
+        wave = np.loadtxt(fname = "lstm_file/train/" + str(filename))
+        rms_feature = feature.rms(y=wave, frame_length=1024, hop_length=256)
+        zero_cross_rate = feature.zero_crossing_rate(y=wave, frame_length=1024, hop_length=256)
+        spec_centroid = feature.spectral_centroid(y=wave, sr=22050, n_fft=1024, hop_length=256)
+        chroma = feature.chroma_stft(y=wave, sr=22050, n_fft=1024, hop_length=256)
+        spec_flat = feature.spectral_flatness(y=wave, n_fft=1024, hop_length=256)
+        poly_feat = feature.poly_features(y=wave, sr=22050, n_fft=1024, hop_length=256)
+        mfcc = feature.mfcc(y=wave, sr=22050, n_mfcc=15, n_fft=1024, hop_length=256)
+        final = np.concatenate((rms_feature, zero_cross_rate, spec_centroid, chroma, spec_flat, poly_feat, mfcc))
+        np.savetxt(fname = "lstm_feature/test/" + str(filename[:-4]) + ".txt", X = final)
+        Y_test.append(filename)
+        print(filename)
+    print(wave)
+
+
+
+def load_dataset():
+    list_dir = sorted(os.listdir("lstm_feature/train"))
+    list_dir_test = sorted(os.listdir("lstm_feature/test"))
+    trainX = []
+    trainy = []
+    testX = []
+    testy = []
+    count = 0
+    for _,filename in enumerate(list_dir):
+        trainX.append(np.transpose(np.loadtxt(fname = "lstm_feature/train/" + str(filename))))
+        trainy.append([1 if (filename[0:1]=='M') else 0, 1 if (filename[0:1]=='S') else 0])
+    count = 0
+    for _,filename in enumerate(list_dir_test):
+        testX.append(np.transpose(np.loadtxt(fname = "lstm_feature/test/" + str(filename))))
+        testy.append([1 if (filename[0:1]=='M') else 0, 1 if (filename[0:1]=='S') else 0])
+    trainy = np.asarray(trainy)
+    trainX = np.asarray(trainX)
+    testy = np.asarray(testy)
+    testX = np.asarray(testX)
+    print(trainX.shape)
+    print(trainy.shape)
+    print(testX.shape)
+    print(testy.shape)
+    return trainX, trainy, testX, testy
 
 def load_dataset1():
     list_dir = sorted(os.listdir("data/train/features"))
@@ -76,7 +150,11 @@ def run_experiment(repeats=10):
     print("hid:" + str(hid))
     summarize_results(scores)
 # run the experiment
-run_experiment()
 
+def run_experiment1():
+    load_dataset()
+
+create_dataset()
+run_experiment()
 
 print("Done")
