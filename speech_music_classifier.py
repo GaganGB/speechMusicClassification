@@ -14,7 +14,7 @@ train_dir = "wav/train"
 test_dir = "wav/test"
 models_dir = "models"
 
-def pre_modelling(hop_length = 1024, n_clust = 16):
+def pre_modelling(hop_length = 512, n_clust = 16):
     create_dirs()
     feature_extraction_train(hop_length)
     feature_extraction_test(hop_length)
@@ -23,12 +23,13 @@ def pre_modelling(hop_length = 1024, n_clust = 16):
 
 def main():
     print("Speech Music Classification")
-    hop_length = 1024
+    hop_length = 512
     n_clust = 16
     # Uncomment when running the program for first time or after changing any parameters for feature_extraction
-    # pre_modelling(hop_length, n_clust)
+    pre_modelling(hop_length, n_clust)
     start_SVM(hop_length, n_clust, 'SVM')
-    start_MLP(hop_length, n_clust, 'MLP')
+    # start_MLP(hop_length, n_clust, 'MLP')
+    print("Done")
 
 # Create new directories to store all the feature files and other related files
 def create_dirs():
@@ -115,7 +116,7 @@ def reduce_feature_test(n_clust):
 """
 We use SVM model to train and test the given dataset.
 """
-def start_SVM(hop_length = 1024, n_clust = 16, folder_name='SVM'):
+def start_SVM(hop_length = 512, n_clust = 16, folder_name='SVM'):
     print("SVM Modelling")
     if(os.path.exists(models_dir + "/" + folder_name) == True):
         try:
@@ -179,7 +180,7 @@ def test_SVM(n_clust, folder_name):
 """
 We use MLP Classifier to train and test the data.
 """
-def start_MLP(hop_length = 1024, n_clust = 16, folder_name = 'MLP'):
+def start_MLP(hop_length = 512, n_clust = 16, folder_name = 'MLP'):
     print("NN Modelling")
     if(os.path.exists(models_dir + "/" + folder_name) == True):
         try:
