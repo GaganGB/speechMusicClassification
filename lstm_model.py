@@ -29,7 +29,7 @@ os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
 #         np.savetxt(fname = "lstm_file/test/" + str(filename[:-4]) + ".txt", X = final)
 #         print(filename)
 
-def roll_mean(X, wind_size=20, wind_jump=14):
+def roll_mean(X, wind_size=5, wind_jump=3):
     X = np.asarray(X)
     n = 0
     i = 0
@@ -56,12 +56,13 @@ def create_dataset():
         wave = np.loadtxt(fname = "../data/normalized_data/train/" + str(filename))
         rms_feature = feature.rms(y=wave, frame_length=256, hop_length=128)
         zero_cross_rate = feature.zero_crossing_rate(y=wave, frame_length=256, hop_length=128)
-        spec_centroid = feature.spectral_centroid(y=wave, sr=22050, n_fft=256, hop_length=128)
-        chroma = feature.chroma_stft(y=wave, sr=22050, n_fft=256, hop_length=128)
-        spec_flat = feature.spectral_flatness(y=wave, n_fft=256, hop_length=128)
-        poly_feat = feature.poly_features(y=wave, sr=22050, n_fft=256, hop_length=128)
+        # spec_centroid = feature.spectral_centroid(y=wave, sr=22050, n_fft=256, hop_length=128)
+        # chroma = feature.chroma_stft(y=wave, sr=22050, n_fft=256, hop_length=128)
+        # spec_flat = feature.spectral_flatness(y=wave, n_fft=256, hop_length=128)
+        # poly_feat = feature.poly_features(y=wave, sr=22050, n_fft=256, hop_length=128)
         # mfcc = feature.mfcc(y=wave, sr=22050, n_mfcc=15, n_fft=256, hop_length=128)
-        final = np.concatenate((rms_feature, zero_cross_rate, spec_centroid, chroma, spec_flat, poly_feat))
+        # final = np.concatenate((rms_feature, zero_cross_rate, spec_centroid, chroma, spec_flat, poly_feat))
+        final = np.concatenate((rms_feature, zero_cross_rate))
         final = roll_mean(final)
         np.savetxt(fname = "../data/lstm_feature/train/" + str(filename[:-4]) + ".txt", X = final)
         Y_train.append(filename)
@@ -70,12 +71,13 @@ def create_dataset():
         wave = np.loadtxt(fname = "../data/normalized_data/test/" + str(filename))
         rms_feature = feature.rms(y=wave, frame_length=256, hop_length=128)
         zero_cross_rate = feature.zero_crossing_rate(y=wave, frame_length=256, hop_length=128)
-        spec_centroid = feature.spectral_centroid(y=wave, sr=22050, n_fft=256, hop_length=128)
-        chroma = feature.chroma_stft(y=wave, sr=22050, n_fft=256, hop_length=128)
-        spec_flat = feature.spectral_flatness(y=wave, n_fft=256, hop_length=128)
-        poly_feat = feature.poly_features(y=wave, sr=22050, n_fft=256, hop_length=128)
+        # spec_centroid = feature.spectral_centroid(y=wave, sr=22050, n_fft=256, hop_length=128)
+        # chroma = feature.chroma_stft(y=wave, sr=22050, n_fft=256, hop_length=128)
+        # spec_flat = feature.spectral_flatness(y=wave, n_fft=256, hop_length=128)
+        # poly_feat = feature.poly_features(y=wave, sr=22050, n_fft=256, hop_length=128)
         # mfcc = feature.mfcc(y=wave, sr=22050, n_mfcc=15, n_fft=256, hop_length=128)
-        final = np.concatenate((rms_feature, zero_cross_rate, spec_centroid, chroma, spec_flat, poly_feat))
+        # final = np.concatenate((rms_feature, zero_cross_rate, spec_centroid, chroma, spec_flat, poly_feat))
+        final = np.concatenate((rms_feature, zero_cross_rate))
         final = roll_mean(final)
         np.savetxt(fname = "../data/lstm_feature/test/" + str(filename[:-4]) + ".txt", X = final)
         Y_test.append(filename)
@@ -176,7 +178,7 @@ def run_experiment(repeats=3):
 def run_experiment1():
     load_dataset()
 
-# create_dataset()
+create_dataset()
 run_experiment()
 # 280-72, 295-73, 310-75, 340-70, 385-77, 430-70, 445-75, 460-72
 
