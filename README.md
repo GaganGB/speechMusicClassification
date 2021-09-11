@@ -1,4 +1,4 @@
-# speechMusicClassification
+# speechMusicClassification (Gagan G.B.  170020029, Pranay Konduru 170020033)
 Speech Music Classification using various ML and DNN methods on open source GTZAN music/speech dataset
 
 
